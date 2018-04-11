@@ -52,6 +52,15 @@ export default class RollDiceCommand extends Command {
 			if(matches[2]) {
 				// Deal with target operations
 				const target = parseInt(matches[3]);
+				// handle reroll-N and critical successes if specified
+				const critical;
+				const reroll;
+				// check for either order of reroll and critical
+				if (matches[4] === '^') { critical = parseInt(matches[5]); reroll = (matches[6] === '&') ? parseInt(matches[7]) : 0;
+				} else if (matches[4] === '&') { reroll = parseInt(matches[5]); critical = (matches[6] === '^') ? parseInt(matches[7]) : 0;
+				// set defaults if none of this is found
+				} else { critical = 10; reroll = 0; }
+				
 				let response;
 
 				// Target for total roll
@@ -66,7 +75,7 @@ export default class RollDiceCommand extends Command {
 				// Target for individual dice (success counting)
 				} else if(matches[2] === '>>' || matches[2] === '<<') {
 					if(rollResult.diceRaw.length !== 1) return { plain: `${message.author} tried to count successes with multiple dice expressions.` };
-					const successes = rollResult.diceRaw[0].reduce((prev, die) => prev + (matches[2] === '>>' ? die > target : die < target), 0);
+					const successes = rollResult.diceRaw[0].reduce((prev, die) => prev + (matches[2] === '>>' ? die > target : die < target) + (die >= critical ? 1 : 0), 0);
 					response = oneLine`
 						${message.author} has **${successes > 0 ? `succeeded ${successes} time${successes !== 1 ? 's' : ''}` : `failed`}**.
 						${rollResult.diceRaw[0].length > 1 && rollResult.diceRaw[0].length <= 100 ? `(${rollResult.diceRaw[0].join(',   ')})` : ''}
